@@ -1,0 +1,9 @@
+services:
+  lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: yoserial_lab
+    container_name: yoserial_lab
+    ports:
+      - "8084:8080"

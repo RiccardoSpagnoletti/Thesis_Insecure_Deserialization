@@ -1,0 +1,9 @@
+services:
+  lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: phpggc_lab
+    container_name: phpggc_lab
+    ports:
+      - "8400:80"
