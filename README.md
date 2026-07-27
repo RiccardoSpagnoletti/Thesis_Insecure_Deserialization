@@ -1,1 +1,1 @@
-# Thesis_Insecure_Deserialization
+# Thesis: Insecure Deserialization
