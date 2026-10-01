@@ -1,0 +1,24 @@
+
+Bozza Discorso
+
+sulla slide 2 "di introduzione": (circa 1m e 20s)
+
+Complex Data structures undergo a serialization and a deserialization process in order to have an easier transfer from one system to another. A security concern arise when, normally in the server side, deserialization is performed as the deserialization itself does not provide any checks on the serialized onject's content. Indeed, the received object could be intentionaly crafted to perform an attack taking advantage of its own "magic methods" invoked in succession as part of the deserialization process. When we refer to these methods we are referring to already existing functions defined whitin the object's class and that the attacker tries to combine, in what we call as "gadget chain", to cause Remote Code Execution or even File Write. 
+My Thesis aims to perform an attack in a controlled enviroment on Docker in order to test the efficency of the attack itself and to mesure the resources needed to eventually deploy a look-alike challenge on a CTF server.
+
+sulla slide 3: (circa 1m)
+A testing enviroment has been created for both JAVA and PHP challenges, as to emulate an online art auction. 
+The application allows users to add paintings and view their information in a public catalogue. When a painting is submitted, its data is serialized on the client side and then sent to the server, where it is deserialized and processed. The two versions of the application preserve the same functionality, allowing the different deserialization mechanisms of PHP and Java to be compared in controlled Docker environments and to emphasize this cross-language nature of the problem .
+
+sulla slide 4: (circa 1:30)
+
+As we can see there are 2 main types of attacks that were tested. The FW or File Write attack aims to make an application create or modify files on the target system without direct authorization, meanwhile RCE o Remote Code Execution attacks aims to make a target application execute attacker-controlled code. In the PHP enviroment the exploits were refering to Monolog which is a logging library widely used, meanwhile for JAVA most of the exploits were refering to Commons-Collection which extends the standard framework with some new data structures, meanwhile for The java's FW the exploit was refering commons-fileupload ,which handles files submitted to web applications through HTTP forms, allowing their contents to be stored in memory or on disk, and to commons-io which provides utilities for reading, writing, and copying data.
+All the payload generated to carry out the attack were measured in bytes and ordered from lower to higher value, as some severs could have a protection mechanism which cause received data to be discarded over a certain limit.
+
+
+sulla slide 5: (circa 1:25)
+As last step of my thesis i coverd some of the possible solutions to prevent an insecure desearization.
+First of all the strongest solution is to complitely remove the serialization/deserialization processes. The alternative is to use a safe data format like JSON, followed by a validation process of its content. For the second solution the idea is for come of the already designed web application a radical change as the first solution can be hard to implement, we can so use class resitrinction, meaning that we can specify which object can undergo the deserialization process.
+As for the last solution, the base idea is to detect when receiving data has been modified by a third party person , the attacker, trying to hide behind a trusted user identity. This can be perfomerd with the Message Authentication Code, choosing one of its version as for HMAC (definizione di HAMC).
+
+
